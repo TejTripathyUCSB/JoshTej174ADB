@@ -238,6 +238,7 @@ CREATE TABLE edepot_replenishment_items (
 -- ============================================================
 CREATE SEQUENCE shipping_notice_seq     START WITH 1 INCREMENT BY 1;
 CREATE SEQUENCE replenishment_order_seq START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE stock_number_seq        START WITH 1 INCREMENT BY 1;
 
 
 -- ============================================================
