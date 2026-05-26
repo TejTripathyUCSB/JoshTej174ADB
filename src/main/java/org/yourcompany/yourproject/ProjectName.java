@@ -5,6 +5,9 @@ public class ProjectName {
         CartService cart = new CartService();
         OrderService orders = new OrderService();
 
+        // Start fresh for repeatable testing.
+        cart.clearCart("C001");
+
         cart.addItem("C001", "CP00001", 1);
         cart.addItem("C001", "KB00001", 2);
 

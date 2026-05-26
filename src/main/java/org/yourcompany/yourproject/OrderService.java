@@ -7,58 +7,74 @@ import java.sql.SQLException;
 
 public class OrderService {
 
+    /**
+     * Process checkout for a customer. Wraps every DB operation in a single
+     * transaction: either everything succeeds or nothing happens.
+     */
     public void checkout(String customerId) {
-        try (Connection conn = DB.getConnection()) {
+        Connection conn = null;
+        try {
+            conn = DB.getConnection();
+            conn.setAutoCommit(false);   // BEGIN TRANSACTION
 
             double subtotal = calculateSubtotal(conn, customerId);
-
             if (subtotal <= 0) {
                 System.out.println("Cart is empty. Cannot checkout.");
+                conn.rollback();
                 return;
             }
 
             String status = getCustomerStatus(conn, customerId);
-
             double discountPercent = getDiscountPercent(conn, status);
             double discount = subtotal * (discountPercent / 100.0);
 
             double freeShipMin = getRule(conn, "FREE_SHIPPING_THRESHOLD");
             double shipPercent = getRule(conn, "SHIPPING_PERCENT");
-
-            double shipping = 0;
-            if (!(subtotal > freeShipMin || status.equals("NEW"))) {
-                shipping = subtotal * (shipPercent / 100.0);
-            }
+            double shipping = (subtotal > freeShipMin || status.equals("NEW"))
+                              ? 0
+                              : subtotal * (shipPercent / 100.0);
 
             double total = subtotal - discount + shipping;
 
             int orderId = createOrder(conn, customerId, subtotal, discount, shipping, total);
             copyCartToOrderItems(conn, customerId, orderId);
             clearCart(conn, customerId);
+            updateCustomerStatus(conn, customerId);
+
+            conn.commit();               // COMMIT
 
             System.out.println("Checkout complete.");
             System.out.println("Order ID: " + orderId);
             System.out.println("Subtotal: $" + subtotal);
             System.out.println("Discount: $" + discount);
             System.out.println("Shipping: $" + shipping);
-            System.out.println("Total: $" + total);
+            System.out.println("Total:    $" + total);
 
         } catch (Exception e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+            }
             e.printStackTrace();
+        } finally {
+            if (conn != null) {
+                try { conn.close(); } catch (SQLException ex) { ex.printStackTrace(); }
+            }
         }
     }
 
     public void displayOrder(int orderId) {
+        // Renamed alias from `i` (was emart_order_items) to `oi` for clarity --
+        // `i` now reads as `item`. JOINs item for manufacturer/model.
         String sql = """
             SELECT o.order_id, o.customer_id, o.order_date,
                    o.subtotal, o.discount, o.shipping_fee, o.total,
-                   i.stock_number, p.manufacturer, p.model_number,
-                   i.quantity, i.price_each
+                   oi.stock_number, i.manufacturer_name, i.model_number,
+                   oi.quantity, oi.price_each
             FROM emart_orders o
-            JOIN emart_order_items i ON o.order_id = i.order_id
-            JOIN emart_products p ON i.stock_number = p.stock_number
+            JOIN emart_order_items oi ON o.order_id      = oi.order_id
+            JOIN item i               ON oi.stock_number = i.stock_number
             WHERE o.order_id = ?
-            ORDER BY i.stock_number
+            ORDER BY oi.stock_number
         """;
 
         try (Connection conn = DB.getConnection();
@@ -77,13 +93,13 @@ public class OrderService {
                         System.out.println("Subtotal: $" + rs.getDouble("subtotal"));
                         System.out.println("Discount: $" + rs.getDouble("discount"));
                         System.out.println("Shipping: $" + rs.getDouble("shipping_fee"));
-                        System.out.println("Total: $" + rs.getDouble("total"));
+                        System.out.println("Total:    $" + rs.getDouble("total"));
                         System.out.println("Items:");
                     }
 
                     System.out.println(
                         rs.getString("stock_number") + " | " +
-                        rs.getString("manufacturer") + " " +
+                        rs.getString("manufacturer_name") + " " +
                         rs.getString("model_number") + " | qty=" +
                         rs.getInt("quantity") + " | price=$" +
                         rs.getDouble("price_each")
@@ -100,6 +116,8 @@ public class OrderService {
         }
     }
 
+    // ---------- private helpers (all take an existing Connection) ----------
+
     private double calculateSubtotal(Connection conn, String customerId) throws SQLException {
         String sql = """
             SELECT NVL(SUM(c.quantity * p.price), 0) AS subtotal
@@ -107,7 +125,6 @@ public class OrderService {
             JOIN emart_products p ON c.stock_number = p.stock_number
             WHERE c.customer_id = ?
         """;
-
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, customerId);
             try (ResultSet rs = stmt.executeQuery()) {
@@ -119,7 +136,6 @@ public class OrderService {
 
     private String getCustomerStatus(Connection conn, String customerId) throws SQLException {
         String sql = "SELECT status FROM emart_customers WHERE customer_id = ?";
-
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, customerId);
             try (ResultSet rs = stmt.executeQuery()) {
@@ -129,19 +145,18 @@ public class OrderService {
         }
     }
 
-   private double getDiscountPercent(Connection conn, String status) throws SQLException {
-    return switch (status) {
-        case "NEW" -> getRule(conn, "NEW_CUSTOMER_DISCOUNT_PERCENT");
-        case "GOLD" -> getRule(conn, "GOLD_DISCOUNT_PERCENT");
-        case "SILVER" -> getRule(conn, "SILVER_DISCOUNT_PERCENT");
-        case "GREEN" -> getRule(conn, "GREEN_DISCOUNT_PERCENT");
-        default -> 0;
-    };
-}
+    private double getDiscountPercent(Connection conn, String status) throws SQLException {
+        return switch (status) {
+            case "NEW"    -> getRule(conn, "NEW_CUSTOMER_DISCOUNT_PERCENT");
+            case "GOLD"   -> getRule(conn, "GOLD_DISCOUNT_PERCENT");
+            case "SILVER" -> getRule(conn, "SILVER_DISCOUNT_PERCENT");
+            case "GREEN"  -> getRule(conn, "GREEN_DISCOUNT_PERCENT");
+            default       -> 0;
+        };
+    }
 
     private double getRule(Connection conn, String ruleName) throws SQLException {
         String sql = "SELECT rule_value FROM emart_rules WHERE rule_name = ?";
-
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, ruleName);
             try (ResultSet rs = stmt.executeQuery()) {
@@ -158,14 +173,12 @@ public class OrderService {
             (customer_id, subtotal, discount, shipping_fee, total)
             VALUES (?, ?, ?, ?, ?)
         """;
-
         try (PreparedStatement stmt = conn.prepareStatement(sql, new String[]{"ORDER_ID"})) {
             stmt.setString(1, customerId);
             stmt.setDouble(2, subtotal);
             stmt.setDouble(3, discount);
             stmt.setDouble(4, shipping);
             stmt.setDouble(5, total);
-
             stmt.executeUpdate();
 
             try (ResultSet keys = stmt.getGeneratedKeys()) {
@@ -183,7 +196,6 @@ public class OrderService {
             JOIN emart_products p ON c.stock_number = p.stock_number
             WHERE c.customer_id = ?
         """;
-
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, orderId);
             stmt.setString(2, customerId);
@@ -193,9 +205,64 @@ public class OrderService {
 
     private void clearCart(Connection conn, String customerId) throws SQLException {
         String sql = "DELETE FROM emart_cart_items WHERE customer_id = ?";
-
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, customerId);
+            stmt.executeUpdate();
+        }
+    }
+
+    /**
+     * Recalculate the customer's status based on last 3 purchases.
+     * Per spec:
+     *   total > GOLD_STATUS_THRESHOLD   -> GOLD
+     *   total > SILVER_STATUS_THRESHOLD -> SILVER
+     *   total > 0                       -> GREEN
+     *   no purchases                    -> NEW
+     */
+    private void updateCustomerStatus(Connection conn, String customerId) throws SQLException {
+        String lastThreeSql = """
+            SELECT NVL(SUM(total), 0) AS recent_total
+            FROM (
+                SELECT total
+                FROM emart_orders
+                WHERE customer_id = ?
+                ORDER BY order_date DESC, order_id DESC
+                FETCH FIRST 3 ROWS ONLY
+            )
+        """;
+
+        double recentTotal;
+        int orderCount;
+        try (PreparedStatement stmt = conn.prepareStatement(lastThreeSql)) {
+            stmt.setString(1, customerId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                rs.next();
+                recentTotal = rs.getDouble("recent_total");
+            }
+        }
+        try (PreparedStatement stmt = conn.prepareStatement(
+                "SELECT COUNT(*) AS c FROM emart_orders WHERE customer_id = ?")) {
+            stmt.setString(1, customerId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                rs.next();
+                orderCount = rs.getInt("c");
+            }
+        }
+
+        double goldThreshold   = getRule(conn, "GOLD_STATUS_THRESHOLD");
+        double silverThreshold = getRule(conn, "SILVER_STATUS_THRESHOLD");
+
+        String newStatus;
+        if (orderCount == 0)               newStatus = "NEW";
+        else if (recentTotal > goldThreshold)   newStatus = "GOLD";
+        else if (recentTotal > silverThreshold) newStatus = "SILVER";
+        else if (recentTotal > 0)               newStatus = "GREEN";
+        else                                    newStatus = "NEW";
+
+        try (PreparedStatement stmt = conn.prepareStatement(
+                "UPDATE emart_customers SET status = ? WHERE customer_id = ?")) {
+            stmt.setString(1, newStatus);
+            stmt.setString(2, customerId);
             stmt.executeUpdate();
         }
     }

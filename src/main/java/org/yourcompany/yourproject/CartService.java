@@ -24,9 +24,7 @@ public class CartService {
             stmt.setString(1, customerId);
             stmt.setString(2, stockNumber);
             stmt.setInt(3, quantity);
-
             stmt.executeUpdate();
-        
 
             System.out.println("Added item to cart.");
 
@@ -49,7 +47,6 @@ public class CartService {
             stmt.setString(2, stockNumber);
 
             int rows = stmt.executeUpdate();
-      
 
             if (rows > 0) {
                 System.out.println("Removed item from cart.");
@@ -63,12 +60,14 @@ public class CartService {
     }
 
     public void displayCart(String customerId) {
+        // JOINs through item to get manufacturer + model_number (which now
+        // live only on item, not on emart_products).
         String sql = """
-            SELECT c.stock_number, p.manufacturer, p.model_number,
+            SELECT c.stock_number, i.manufacturer_name, i.model_number,
                    c.quantity, p.price, c.quantity * p.price AS line_total
             FROM emart_cart_items c
-            JOIN emart_products p
-              ON c.stock_number = p.stock_number
+            JOIN emart_products p ON c.stock_number = p.stock_number
+            JOIN item i           ON c.stock_number = i.stock_number
             WHERE c.customer_id = ?
             ORDER BY c.stock_number
         """;
@@ -91,7 +90,7 @@ public class CartService {
 
                     System.out.println(
                         rs.getString("stock_number") + " | " +
-                        rs.getString("manufacturer") + " " +
+                        rs.getString("manufacturer_name") + " " +
                         rs.getString("model_number") + " | qty=" +
                         rs.getInt("quantity") + " | price=$" +
                         rs.getDouble("price") + " | line=$" +
@@ -105,6 +104,21 @@ public class CartService {
                     System.out.println("Subtotal: $" + total);
                 }
             }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /** Useful for testing -- clears all items in a customer's cart. */
+    public void clearCart(String customerId) {
+        String sql = "DELETE FROM emart_cart_items WHERE customer_id = ?";
+
+        try (Connection conn = DB.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, customerId);
+            stmt.executeUpdate();
 
         } catch (Exception e) {
             e.printStackTrace();
