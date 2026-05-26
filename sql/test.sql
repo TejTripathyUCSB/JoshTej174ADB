@@ -5,3 +5,7 @@ SELECT COUNT(*) FROM item;
 SELECT COUNT(*) FROM emart_products;
 SELECT COUNT(*) FROM emart_customers;
 SELECT COUNT(*) FROM emart_rules;
+SELECT * FROM emart_customers;
+SELECT * FROM emart_products;
+SELECT * FROM emart_product_attributes;
+SELECT * FROM edepot_inventory;
