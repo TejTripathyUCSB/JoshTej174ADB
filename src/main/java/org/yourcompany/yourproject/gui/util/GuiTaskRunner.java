@@ -1,9 +1,10 @@
 package org.yourcompany.yourproject.gui.util;
 
+import java.util.concurrent.Callable;
+
 import javax.swing.JComponent;
 import javax.swing.JTextArea;
 import javax.swing.SwingWorker;
-import java.util.concurrent.Callable;
 
 public final class GuiTaskRunner {
 
