@@ -1,3 +1,16 @@
+COPY PASTE STUFF
+
+
+SELECT stock_number, quantity, min_stock, max_stock, replenishment FROM item ORDER BY stock_number;
+
+SELECT order_id, customer_id, subtotal, discount, shipping_fee, total, fulfillment_status FROM emart_orders ORDER BY order_id;
+
+SELECT customer_id, status FROM emart_customers ORDER BY customer_id;
+
+SELECT * FROM edepot_shipping_notices ORDER BY notice_id;
+
+SELECT * FROM edepot_replenishment_orders ORDER BY order_id;
+
 # CS 174A Project — eMART + eDEPOT
 
 Java + JDBC project for CS 174A, Spring 2026.

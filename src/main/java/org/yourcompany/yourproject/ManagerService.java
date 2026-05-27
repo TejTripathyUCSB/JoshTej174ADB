@@ -3,8 +3,12 @@ package org.yourcompany.yourproject;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.List;
 
 public class ManagerService {
+
+    public record ManufacturerOrderLine(String stockNumber, int quantity) {}
 
     public void changePrice(String stockNumber, double newPrice) {
         String sql = """
@@ -202,6 +206,99 @@ public class ManagerService {
 
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    public void sendManufacturerOrder(String manufacturer, List<ManufacturerOrderLine> lines) throws SQLException {
+        if (manufacturer == null || manufacturer.isBlank()) {
+            throw new IllegalArgumentException("Manufacturer is required.");
+        }
+        if (lines == null || lines.isEmpty()) {
+            throw new IllegalArgumentException("Order must include at least one line.");
+        }
+        for (ManufacturerOrderLine line : lines) {
+            if (line.stockNumber() == null || line.stockNumber().isBlank()) {
+                throw new IllegalArgumentException("Stock number is required on every line.");
+            }
+            if (line.quantity() <= 0) {
+                throw new IllegalArgumentException("Line quantity must be > 0 for " + line.stockNumber());
+            }
+        }
+
+        Connection conn = null;
+        try {
+            conn = DB.getConnection();
+            conn.setAutoCommit(false);
+
+            String validateSql = "SELECT manufacturer_name FROM item WHERE stock_number = ?";
+            try (PreparedStatement ps = conn.prepareStatement(validateSql)) {
+                for (ManufacturerOrderLine line : lines) {
+                    ps.setString(1, line.stockNumber());
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (!rs.next()) {
+                            throw new IllegalArgumentException(
+                                "Stock number not found: " + line.stockNumber()
+                            );
+                        }
+                        String actualMfr = rs.getString("manufacturer_name");
+                        if (!actualMfr.equalsIgnoreCase(manufacturer)) {
+                            throw new IllegalArgumentException(
+                                "Stock " + line.stockNumber() + " belongs to " + actualMfr +
+                                ", not " + manufacturer
+                            );
+                        }
+                    }
+                }
+            }
+
+            String orderId;
+            try (PreparedStatement ps = conn.prepareStatement("SELECT replenishment_order_seq.NEXTVAL FROM DUAL");
+                 ResultSet rs = ps.executeQuery()) {
+                rs.next();
+                orderId = String.format("RO%05d", rs.getInt(1));
+            }
+
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "INSERT INTO edepot_replenishment_orders (order_id, manufacturer_name, order_date) VALUES (?, ?, SYSDATE)")) {
+                ps.setString(1, orderId);
+                ps.setString(2, manufacturer);
+                ps.executeUpdate();
+            }
+
+            String insertItemSql = "INSERT INTO edepot_replenishment_items (order_id, stock_number, quantity) VALUES (?, ?, ?)";
+            String bumpReplenSql = "UPDATE item SET replenishment = replenishment + ? WHERE stock_number = ?";
+            try (PreparedStatement psItem = conn.prepareStatement(insertItemSql);
+                 PreparedStatement psBump = conn.prepareStatement(bumpReplenSql)) {
+                for (ManufacturerOrderLine line : lines) {
+                    psItem.setString(1, orderId);
+                    psItem.setString(2, line.stockNumber());
+                    psItem.setInt(3, line.quantity());
+                    psItem.executeUpdate();
+
+                    psBump.setInt(1, line.quantity());
+                    psBump.setString(2, line.stockNumber());
+                    psBump.executeUpdate();
+                }
+            }
+
+            conn.commit();
+            System.out.println("Sent manufacturer order " + orderId + " to " + manufacturer +
+                               " (" + lines.size() + " line(s)).");
+            for (ManufacturerOrderLine line : lines) {
+                System.out.println("  " + line.stockNumber() + " x " + line.quantity());
+            }
+        } catch (SQLException | IllegalArgumentException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+            }
+            throw e;
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                } catch (SQLException ex) { ex.printStackTrace(); }
+            }
         }
     }
 

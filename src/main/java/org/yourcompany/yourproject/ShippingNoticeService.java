@@ -9,12 +9,28 @@ import java.util.List;
 public class ShippingNoticeService {
 
     public void receiveShippingNotice(String noticeId, String manufacturer, String company, List<NoticeItem> items) throws SQLException {
+        // Strict pre-validation: every line item's manufacturer must match the
+        // notice header's manufacturer. Done before opening a DB connection so a
+        // mismatch aborts cleanly with no partially-written transaction.
+        if (manufacturer == null || manufacturer.isBlank()) {
+            throw new IllegalArgumentException("Notice header manufacturer is required.");
+        }
+        for (NoticeItem item : items) {
+            String itemMfr = item.getManufacturer();
+            if (itemMfr == null || !itemMfr.equalsIgnoreCase(manufacturer)) {
+                throw new IllegalArgumentException(
+                    "Notice item manufacturer '" + itemMfr +
+                    "' does not match notice header manufacturer '" + manufacturer + "'"
+                );
+            }
+        }
+
         Connection conn = null;
         try {
             conn = DB.getConnection();
             conn.setAutoCommit(false);
 
-            // Insert into edepot_shipping_notices
+            // 1. Insert header
             String insertNoticeSql = "INSERT INTO edepot_shipping_notices (notice_id, manufacturer_name, shipping_company_name, status, notice_date) VALUES (?, ?, ?, 'PENDING', SYSDATE)";
             try (PreparedStatement ps = conn.prepareStatement(insertNoticeSql)) {
                 ps.setString(1, noticeId);
@@ -23,64 +39,63 @@ public class ShippingNoticeService {
                 ps.executeUpdate();
             }
 
-            String checkItemByModelSql = "SELECT stock_number FROM item WHERE manufacturer_name = ? AND model_number = ?";
-            String checkItemByStockSql = "SELECT manufacturer_name FROM item WHERE stock_number = ?";
+            String checkItemSql = "SELECT stock_number FROM item WHERE manufacturer_name = ? AND model_number = ?";
             String updateReplenishmentSql = "UPDATE item SET replenishment = replenishment + ? WHERE stock_number = ?";
+            String insertItemSql = "INSERT INTO item (stock_number, manufacturer_name, model_number, quantity, min_stock, max_stock, location, replenishment) VALUES (?, ?, ?, 0, ?, ?, ?, ?)";
+            String getSeqSql = "SELECT stock_number_seq.NEXTVAL FROM DUAL";
+            
+            // Notice items use manufacturer and model, NOT stock number
             String insertNoticeItemSql = "INSERT INTO edepot_shipping_notice_items (notice_id, stock_number, quantity) VALUES (?, ?, ?)";
 
-            try (PreparedStatement psCheckByModel = conn.prepareStatement(checkItemByModelSql);
-                 PreparedStatement psCheckByStock = conn.prepareStatement(checkItemByStockSql);
+            try (PreparedStatement psCheck = conn.prepareStatement(checkItemSql);
                  PreparedStatement psUpdateReplenishment = conn.prepareStatement(updateReplenishmentSql);
+                 PreparedStatement psInsertItem = conn.prepareStatement(insertItemSql);
+                 PreparedStatement psGetSeq = conn.prepareStatement(getSeqSql);
                  PreparedStatement psInsertNoticeItem = conn.prepareStatement(insertNoticeItemSql)) {
 
                 for (NoticeItem item : items) {
-                    String stockNumber = item.getStockNumber();
+                    // Check if item exists
+                    psCheck.setString(1, item.getManufacturer());
+                    psCheck.setString(2, item.getModelNumber());
+                    String stockNumber = null;
 
-                    if (stockNumber != null) {
-                        psCheckByStock.setString(1, stockNumber);
-                        try (ResultSet rs = psCheckByStock.executeQuery()) {
-                            if (!rs.next()) {
-                                throw new IllegalArgumentException("Unknown stock_number in shipping notice: " + stockNumber);
-                            }
-                            String actualManufacturer = rs.getString("manufacturer_name");
-                            if (!actualManufacturer.equalsIgnoreCase(manufacturer)) {
-                                throw new IllegalArgumentException(
-                                    "Stock number " + stockNumber + " belongs to " + actualManufacturer +
-                                    ", but notice header manufacturer is " + manufacturer
-                                );
-                            }
-                        }
-                    } else {
-                        if (item.getManufacturer() == null || item.getModelNumber() == null) {
-                            throw new IllegalArgumentException("Notice item must include stock_number or (manufacturer, model_number).");
-                        }
-                        psCheckByModel.setString(1, item.getManufacturer());
-                        psCheckByModel.setString(2, item.getModelNumber());
-                        try (ResultSet rs = psCheckByModel.executeQuery()) {
-                            if (rs.next()) {
-                                stockNumber = rs.getString("stock_number");
-                            } else {
-                                throw new IllegalArgumentException(
-                                    "Cannot resolve stock_number for " + item.getManufacturer() + " / " + item.getModelNumber()
-                                );
-                            }
-                        }
-                        if (!item.getManufacturer().equalsIgnoreCase(manufacturer)) {
-                            throw new IllegalArgumentException(
-                                "Notice item manufacturer " + item.getManufacturer() +
-                                " does not match notice header manufacturer " + manufacturer
-                            );
+                    try (ResultSet rs = psCheck.executeQuery()) {
+                        if (rs.next()) {
+                            stockNumber = rs.getString("stock_number");
+                            // Exists: Update replenishment
+                            psUpdateReplenishment.setInt(1, item.getQuantity());
+                            psUpdateReplenishment.setString(2, stockNumber);
+                            psUpdateReplenishment.executeUpdate();
                         }
                     }
 
+                    if (stockNumber == null) {
+                        // New product: Generate stock number (Requirement: XXnnnnn)
+                        int seqVal = 0;
+                        try (ResultSet rsSeq = psGetSeq.executeQuery()) {
+                            if (rsSeq.next()) {
+                                seqVal = rsSeq.getInt(1);
+                            }
+                        }
+                        stockNumber = String.format("ED%05d", seqVal);
+                        String location = "W" + seqVal;
+
+                        // Insert new item into eDEPOT ONLY
+                        psInsertItem.setString(1, stockNumber);
+                        psInsertItem.setString(2, item.getManufacturer());
+                        psInsertItem.setString(3, item.getModelNumber());
+                        psInsertItem.setInt(4, 10); // Default min_stock
+                        psInsertItem.setInt(5, 100); // Default max_stock
+                        psInsertItem.setString(6, location);
+                        psInsertItem.setInt(7, item.getQuantity()); // initial replenishment
+                        psInsertItem.executeUpdate();
+                    }
+
+                    // Insert shipping notice item
                     psInsertNoticeItem.setString(1, noticeId);
                     psInsertNoticeItem.setString(2, stockNumber);
                     psInsertNoticeItem.setInt(3, item.getQuantity());
                     psInsertNoticeItem.executeUpdate();
-
-                    psUpdateReplenishment.setInt(1, item.getQuantity());
-                    psUpdateReplenishment.setString(2, stockNumber);
-                    psUpdateReplenishment.executeUpdate();
                 }
             }
 
@@ -125,6 +140,7 @@ public class ShippingNoticeService {
                 WHERE ni.notice_id = ?
                 FOR UPDATE
             """;
+            
             String updateItemSql = "UPDATE item SET quantity = quantity + ?, replenishment = replenishment - ? WHERE stock_number = ?";
 
             try (PreparedStatement psGet = conn.prepareStatement(getNoticeItemsSql);

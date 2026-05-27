@@ -60,6 +60,17 @@ public class ProductTab extends JPanel {
         modelRow.add(searchModelButton);
         controls.add(modelRow);
 
+        JPanel compatibleRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JTextField compatMfrField = new JTextField(10);
+        JTextField compatModelField = new JTextField(10);
+        JButton searchCompatibleButton = new JButton("Search Compatible");
+        compatibleRow.add(new JLabel("Compat. Mfr"));
+        compatibleRow.add(compatMfrField);
+        compatibleRow.add(new JLabel("Model"));
+        compatibleRow.add(compatModelField);
+        compatibleRow.add(searchCompatibleButton);
+        controls.add(compatibleRow);
+
         JPanel attributeRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JTextField attributeNameField = new JTextField(10);
         JTextField attributeValueField = new JTextField(10);
@@ -70,6 +81,30 @@ public class ProductTab extends JPanel {
         attributeRow.add(attributeValueField);
         attributeRow.add(searchAttributeButton);
         controls.add(attributeRow);
+
+        JPanel combinedRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JTextField cStockField = new JTextField(7);
+        JTextField cMfrField = new JTextField(7);
+        JTextField cModelField = new JTextField(7);
+        JTextField cCategoryField = new JTextField(7);
+        JTextField cAttrNameField = new JTextField(7);
+        JTextField cAttrValueField = new JTextField(7);
+        JButton searchCombinedButton = new JButton("Combined Search");
+        combinedRow.add(new JLabel("Combo:"));
+        combinedRow.add(new JLabel("Stock"));
+        combinedRow.add(cStockField);
+        combinedRow.add(new JLabel("Mfr"));
+        combinedRow.add(cMfrField);
+        combinedRow.add(new JLabel("Model"));
+        combinedRow.add(cModelField);
+        combinedRow.add(new JLabel("Cat"));
+        combinedRow.add(cCategoryField);
+        combinedRow.add(new JLabel("Attr"));
+        combinedRow.add(cAttrNameField);
+        combinedRow.add(new JLabel("Val"));
+        combinedRow.add(cAttrValueField);
+        combinedRow.add(searchCombinedButton);
+        controls.add(combinedRow);
 
         add(controls, BorderLayout.NORTH);
         add(new JScrollPane(outputArea), BorderLayout.CENTER);
@@ -109,6 +144,16 @@ public class ProductTab extends JPanel {
             searchModelButton
         ));
 
+        searchCompatibleButton.addActionListener(e -> GuiTaskRunner.run(
+            "Search Compatible Items",
+            outputArea,
+            () -> ConsoleCapture.capture(() -> productService.searchCompatibleItems(
+                compatMfrField.getText().trim(),
+                compatModelField.getText().trim()
+            )),
+            searchCompatibleButton
+        ));
+
         searchAttributeButton.addActionListener(e -> GuiTaskRunner.run(
             "Search By Attribute",
             outputArea,
@@ -117,6 +162,20 @@ public class ProductTab extends JPanel {
                 attributeValueField.getText().trim()
             )),
             searchAttributeButton
+        ));
+
+        searchCombinedButton.addActionListener(e -> GuiTaskRunner.run(
+            "Combined Search",
+            outputArea,
+            () -> ConsoleCapture.capture(() -> productService.searchCombined(
+                cStockField.getText().trim(),
+                cMfrField.getText().trim(),
+                cModelField.getText().trim(),
+                cCategoryField.getText().trim(),
+                cAttrNameField.getText().trim(),
+                cAttrValueField.getText().trim()
+            )),
+            searchCombinedButton
         ));
     }
 }
