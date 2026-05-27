@@ -9,6 +9,22 @@ import java.util.List;
 public class ShippingNoticeService {
 
     public void receiveShippingNotice(String noticeId, String manufacturer, String company, List<NoticeItem> items) throws SQLException {
+        // Strict pre-validation: every line item's manufacturer must match the
+        // notice header's manufacturer. Done before opening a DB connection so a
+        // mismatch aborts cleanly with no partially-written transaction.
+        if (manufacturer == null || manufacturer.isBlank()) {
+            throw new IllegalArgumentException("Notice header manufacturer is required.");
+        }
+        for (NoticeItem item : items) {
+            String itemMfr = item.getManufacturer();
+            if (itemMfr == null || !itemMfr.equalsIgnoreCase(manufacturer)) {
+                throw new IllegalArgumentException(
+                    "Notice item manufacturer '" + itemMfr +
+                    "' does not match notice header manufacturer '" + manufacturer + "'"
+                );
+            }
+        }
+
         Connection conn = null;
         try {
             conn = DB.getConnection();
