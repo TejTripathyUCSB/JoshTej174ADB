@@ -1,0 +1,1 @@
+SELECT customer_id, status FROM emart_customers WHERE customer_id='Lkim';

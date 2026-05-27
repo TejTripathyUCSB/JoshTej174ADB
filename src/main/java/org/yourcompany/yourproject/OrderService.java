@@ -251,9 +251,9 @@ public class OrderService {
 
     private void updateCustomerStatus(Connection conn, String customerId) throws SQLException {
         String lastThreeSql = """
-            SELECT NVL(SUM(total), 0) AS recent_total
+            SELECT NVL(SUM(subtotal), 0) AS recent_total
             FROM (
-                SELECT total
+                SELECT subtotal
                 FROM emart_orders
                 WHERE customer_id = ?
                 ORDER BY order_date DESC, order_id DESC

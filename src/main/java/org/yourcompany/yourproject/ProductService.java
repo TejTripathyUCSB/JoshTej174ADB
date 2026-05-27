@@ -3,6 +3,8 @@ package org.yourcompany.yourproject;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ProductService {
 
@@ -71,6 +73,54 @@ public class ProductService {
               AND LOWER(target.model_number)     = LOWER(?)
         """;
         runProductQueryWithTwoParams(sql, manufacturer, modelNumber);
+    }
+
+    /**
+     * Combined search: any subset of (stock #, manufacturer, model, category,
+     * attribute name, attribute value) may be supplied. Blank/null fields are
+     * ignored. At least one criterion must be non-blank.
+     */
+    public void searchCombined(String stockNumber, String manufacturer, String modelNumber,
+                                String category, String attributeName, String attributeValue) {
+        boolean needAttrJoin = !isBlank(attributeName) || !isBlank(attributeValue);
+
+        StringBuilder sql = new StringBuilder(PRODUCT_SELECT);
+        if (needAttrJoin) {
+            sql.append(" JOIN emart_product_attributes a ON p.stock_number = a.stock_number ");
+        }
+
+        List<String> clauses = new ArrayList<>();
+        List<String> params = new ArrayList<>();
+        if (!isBlank(stockNumber))    { clauses.add("p.stock_number = ?");                  params.add(stockNumber.trim()); }
+        if (!isBlank(manufacturer))   { clauses.add("LOWER(i.manufacturer_name) = LOWER(?)"); params.add(manufacturer.trim()); }
+        if (!isBlank(modelNumber))    { clauses.add("LOWER(i.model_number)     = LOWER(?)"); params.add(modelNumber.trim()); }
+        if (!isBlank(category))       { clauses.add("LOWER(p.category)          = LOWER(?)"); params.add(category.trim()); }
+        if (!isBlank(attributeName))  { clauses.add("LOWER(a.attribute_name)    = LOWER(?)"); params.add(attributeName.trim()); }
+        if (!isBlank(attributeValue)) { clauses.add("LOWER(a.attribute_value)   = LOWER(?)"); params.add(attributeValue.trim()); }
+
+        if (clauses.isEmpty()) {
+            System.out.println("Please provide at least one search criterion.");
+            return;
+        }
+
+        sql.append(" WHERE ").append(String.join(" AND ", clauses));
+        sql.append(" ORDER BY p.stock_number");
+
+        try (Connection conn = DB.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                stmt.setString(i + 1, params.get(i));
+            }
+            try (ResultSet rs = stmt.executeQuery()) {
+                printProducts(rs);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static boolean isBlank(String s) {
+        return s == null || s.trim().isEmpty();
     }
 
     // ---------- shared helpers ----------
