@@ -50,7 +50,7 @@ public class ProjectName {
             }
 
             System.out.println("Created order ID: " + createdOrderId);
-            orders.displayOrder(createdOrderId);
+            orders.displayOrder("Lkim", createdOrderId);
 
             System.out.println("\n=== 5. eDEPOT Fill Order ===");
             inventory.fillOrder(createdOrderId);
@@ -69,7 +69,7 @@ public class ProjectName {
             System.out.println("Actual AA00201 decrease: " + (desktopBeforeFill - desktopAfterFill));
 
             System.out.println("\n=== 7. Order After Fill Should Be FILLED ===");
-            orders.displayOrder(createdOrderId);
+            orders.displayOrder("Lkim", createdOrderId);
 
             System.out.println("\n=== 8. Double Fill Protection Test ===");
             System.out.println("Trying to fill the same order again. This should be refused.");

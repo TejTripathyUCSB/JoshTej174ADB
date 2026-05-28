@@ -60,7 +60,7 @@ public class OrderService {
         }
     }
 
-    public void displayOrder(int orderId) {
+    public void displayOrder(String customerId, int orderId) {
         String sql = """
             SELECT o.order_id, o.customer_id, o.order_date,
                    o.subtotal, o.discount, o.shipping_fee, o.total,
@@ -71,6 +71,7 @@ public class OrderService {
             JOIN emart_order_items oi ON o.order_id = oi.order_id
             JOIN item i ON oi.stock_number = i.stock_number
             WHERE o.order_id = ?
+              AND o.customer_id = ?
             ORDER BY oi.stock_number
         """;
 
@@ -78,6 +79,7 @@ public class OrderService {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, orderId);
+            stmt.setString(2, customerId);
 
             try (ResultSet rs = stmt.executeQuery()) {
                 boolean found = false;
@@ -115,7 +117,7 @@ public class OrderService {
         }
     }
 
-    public void rerunOrder(int orderId) {
+    public void rerunOrder(String customerId, int orderId) {
         String sql = """
             MERGE INTO emart_cart_items c
             USING (
@@ -123,6 +125,7 @@ public class OrderService {
                 FROM emart_orders o
                 JOIN emart_order_items oi ON o.order_id = oi.order_id
                 WHERE o.order_id = ?
+                  AND o.customer_id = ?
             ) input
             ON (c.customer_id = input.customer_id AND c.stock_number = input.stock_number)
             WHEN MATCHED THEN
@@ -136,6 +139,7 @@ public class OrderService {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, orderId);
+            stmt.setString(2, customerId);
             int rows = stmt.executeUpdate();
 
             if (rows == 0) {

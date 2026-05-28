@@ -197,35 +197,48 @@ Created order_id=4
 
 ---
 
-*(Remaining steps are manager/eDEPOT operations — stay logged in as `Tcodd`.)*
+*(Q11–Q12 are customer operations on `Tcodd`'s own orders; Q13+ are manager/eDEPOT operations.
+Stay logged in as `Tcodd` throughout — Tcodd is both a customer and a manager.)*
 
 ### Q11 — Display a previous order  *(spec 2.3: display previous order)*
-**Tab:** Orders/eDEPOT → `Order ID` = `3` → **Display Order**
+**Tab:** Cart/Checkout (logged in as `Tcodd`) → `Order ID` = `4` → **Display Order**
 ```
-Order #3
-Customer: Dknuth
+Order #4
+Customer: Tcodd
 Date: <demo date, e.g. 2026-05-28>
 Status: PENDING
-Subtotal: $1630.00
-Discount: $163.00
+Subtotal: $4099.96
+Discount: $410.00
 Shipping: $0.00
-Total:    $1467.00
+Total:    $3689.96
 Items:
-AA00101 | HP A6111 | qty=1 | price=$1630.00
+AA00101 | HP A6111 | qty=2 | price=$1630.00
+AA00501 | HP J1320 | qty=2 | price=$299.99
+AA00601 | HP K435 | qty=2 | price=$119.99
 ```
-> Note for graders: in this GUI, Display/Re-run Order live on the **manager-only** Orders/eDEPOT
-> tab, even though the spec lists them as *customer* operations. Be ready to explain/justify (or
-> note as a known UI placement issue). Status is `PENDING` because eDEPOT hasn't filled it yet.
+> Display/Re-run Order now live on the **customer** Cart/Checkout tab (spec 2.3 lists them as customer
+> operations) and are **scoped to the logged-in customer's own orders**. Status is `PENDING` because
+> eDEPOT hasn't filled order #4 yet (it gets filled in Q15).
+>
+> **Ownership check (worth showing proactively):** still as `Tcodd`, set `Order ID` = `3` → **Display
+> Order**:
+> ```
+> Order not found.
+> ```
+> Order #3 is Dknuth's, so Tcodd can't see it — `displayOrder` filters `AND o.customer_id = ?`
+> (`OrderService.java`). This is the privacy fix the TA asked for.
 
 ### Q12 — Re-run a previous order  *(spec 2.3: re-run previous order)*
-**Tab:** Orders/eDEPOT → `Order ID` = `2` → **Rerun Order -> Cart**
+**Tab:** Cart/Checkout (logged in as `Tcodd`) → `Order ID` = `4` → **Rerun Order -> Cart**
 ```
-Re-ran order #2.
-Copied 1 item(s) back into the cart.
+Re-ran order #4.
+Copied 3 item(s) back into the cart.
 ```
-> **Important behavior:** re-run copies the items back into the **original order's customer's**
-> cart (Jgray's), not the clicker's. Verify: `SELECT * FROM emart_cart_items WHERE customer_id='Jgray';`
-> → one row `(Jgray, AA00301, 1)`. (Design rationale in Part C.)
+> Re-run copies the order's items back into **your own** cart, and only works on an order you placed.
+> Verify: `SELECT * FROM emart_cart_items WHERE customer_id='Tcodd' ORDER BY stock_number;` →
+> `(Tcodd, AA00101, 2)`, `(Tcodd, AA00501, 2)`, `(Tcodd, AA00601, 2)`. Trying `Order ID` = `2`
+> (Jgray's) as Tcodd prints `Order not found or order had no items.` — same `AND o.customer_id = ?`
+> scope. (This re-populated cart is harmless: nothing later in the script checks out Tcodd's cart.)
 
 ### Q13 — Check inventory quantity  *(spec 3.2: check item quantity)*
 **Tab:** Orders/eDEPOT → `Stock #` = `AA00101` → **Check Inventory**
@@ -244,9 +257,10 @@ Inventory for AA00101:
 ```
 Filled order #2.
 ```
-**Effect:** AA00301 quantity 4 → 3. Order #2 → `FILLED` (re-display to confirm `Status: FILLED`).
-No replenishment fires (no manufacturer has 3+ items below min). 3 is exactly AA00301's min, *not*
-below it.
+**Effect:** AA00301 quantity 4 → 3. Order #2 → `FILLED` (confirm with
+`SELECT fulfillment_status FROM emart_orders WHERE order_id=2;` — display is now customer-scoped and
+Jgray isn't logged in). No replenishment fires (no manufacturer has 3+ items below min). 3 is exactly
+AA00301's min, *not* below it.
 
 ### Q15 — Fill an order that TRIGGERS replenishment  *(spec 3.2: replenishment rule)*
 **Tab:** Orders/eDEPOT → `Order ID` = `4` → **Fill Order**
@@ -269,6 +283,8 @@ SELECT * FROM edepot_replenishment_items WHERE order_id='RO00001' ORDER BY stock
 > The fill + the replenishment generation happen in **one transaction** (`InventoryService.fillOrder`
 > calls `generateReplenishment` before `commit`). The console only prints `Filled order #4.`; the
 > replenishment order is visible only in the tables.
+> (Confirm the status flip: back on Cart/Checkout as `Tcodd`, `Order ID` = `4` → **Display Order** now
+> shows `Status: FILLED` — the same order you saw as PENDING in Q11.)
 
 ### Q16 — Double-fill protection  *(integrity / idempotency)*
 **Tab:** Orders/eDEPOT → `Order ID` = `4` → **Fill Order** (again)
@@ -469,7 +485,15 @@ Orders and monthly reports must reflect the price **at purchase time**. Changing
 
 **Q. Why `MERGE` for add-to-cart and re-run?**
 It's an upsert: if the (customer, stock) line exists, increment its quantity; otherwise insert it.
-Avoids duplicate-key errors and a separate exists-check round trip.
+Avoids duplicate-key errors and a separate exists-check round trip. Re-run additionally filters the
+source order by `AND o.customer_id = ?`, so you can only re-run an order you placed, and its items
+land in your own cart.
+
+**Q. Why can a customer only display / re-run their *own* orders?**
+`displayOrder` and `rerunOrder` both filter `AND o.customer_id = ?` against the logged-in session, so
+a guessed order ID can't be used to read or replay someone else's purchases (a privacy leak), and
+re-run always targets the clicker's own cart instead of mutating the original buyer's cart. A
+non-matching ID returns the ordinary "not found" message rather than revealing that the order exists.
 
 **Q. How does the system persist across restarts (spec requirement)?**
 Everything is in Oracle via JDBC — no files. The GUI holds no state; on relaunch it reads straight
@@ -484,8 +508,9 @@ Manager tabs when `session.manager` is true. Customers see only Products and Car
 ## PART D — Known issues / things to verify before you walk in
 
 1. **Manager flag mismatch (seed vs SampleData).** See §0. Decide and fix or be ready to explain.
-2. **Display/Re-run Order are on the manager-only tab**, though the spec lists them as customer
-   operations. Either move them to the customer view or have an answer ready.
+2. **Display/Re-run Order — RESOLVED.** Moved to the customer Cart/Checkout tab (spec 2.3) and
+   scoped to the logged-in customer's own orders (`AND o.customer_id = ?` in `displayOrder`/
+   `rerunOrder`). A customer can no longer view or re-run another customer's order. See Q11/Q12.
 3. **No inventory reservation at checkout** — you can place an unfillable order. Defensible
    ("check at fill"), but know the trade-off; the spec explicitly asks about it.
 4. **Some searches lack `ORDER BY`** (`searchByCategory/Manufacturer/Model/Attribute`, compatible) →
@@ -495,8 +520,8 @@ Manager tabs when `session.manager` is true. Customers see only Products and Car
 6. **New products from a notice** get an `item` row but **no `emart_products` row**, so they're in
    inventory but not sellable until a catalog entry is added; default min/max are hard-coded (10/100)
    and location is `W<seq>`. Know this if asked to receive a genuinely new product.
-7. **Re-run populates the original customer's cart**, not the logged-in user's (Q12). Intentional,
-   but surprising — be ready to explain.
+7. **Re-run — RESOLVED.** Now populates **your own** cart and only works on an order you placed
+   (previously it copied into the original buyer's cart regardless of who clicked). See Q12.
 8. **Order IDs assume a fresh schema.** Always drop/recreate/seed right before the demo.
 
 ---

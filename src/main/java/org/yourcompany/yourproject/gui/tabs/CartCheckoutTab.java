@@ -110,6 +110,7 @@ public class CartCheckoutTab extends JPanel {
             "Display Order",
             outputArea,
             () -> ConsoleCapture.capture(() -> orderService.displayOrder(
+                customerField.getText().trim(),
                 Integer.parseInt(orderIdField.getText().trim())
             )),
             displayOrderButton
@@ -119,6 +120,7 @@ public class CartCheckoutTab extends JPanel {
             "Rerun Order -> Cart",
             outputArea,
             () -> ConsoleCapture.capture(() -> orderService.rerunOrder(
+                customerField.getText().trim(),
                 Integer.parseInt(orderIdField.getText().trim())
             )),
             rerunOrderButton
