@@ -1,19 +1,20 @@
 package org.yourcompany.yourproject.gui;
 
+import java.awt.BorderLayout;
+
+import javax.swing.JFrame;
+import javax.swing.JTabbedPane;
+
 import org.yourcompany.yourproject.gui.tabs.CartCheckoutTab;
 import org.yourcompany.yourproject.gui.tabs.ManagerTab;
 import org.yourcompany.yourproject.gui.tabs.OrderDepotTab;
 import org.yourcompany.yourproject.gui.tabs.ProductTab;
 import org.yourcompany.yourproject.gui.tabs.ShippingTab;
 
-import javax.swing.JFrame;
-import javax.swing.JTabbedPane;
-import java.awt.BorderLayout;
-
 public class AppFrame extends JFrame {
 
     public AppFrame() {
-        super("CS174A eMART + eDEPOT GUI");
+        super("174A PROJECT: GUI Management System");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1200, 700);
         setLocationRelativeTo(null);
