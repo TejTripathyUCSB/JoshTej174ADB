@@ -70,8 +70,16 @@ public class OrderDepotTab extends JPanel {
             "Inventory Check",
             outputArea,
             () -> {
-                int qty = inventoryService.getInventoryQuantity(stockField.getText().trim());
-                return "Inventory for " + stockField.getText().trim() + " = " + qty + "\n";
+                String sn = stockField.getText().trim();
+                InventoryService.InventoryDetails d = inventoryService.getInventoryDetails(sn);
+                if (d == null) {
+                    return "Inventory for " + sn + ": not found.\n";
+                }
+                return "Inventory for " + sn + ":\n" +
+                       "  quantity      = " + d.quantity() + "\n" +
+                       "  location      = " + d.location() + "\n" +
+                       "  min/max stock = " + d.minStock() + " / " + d.maxStock() + "\n" +
+                       "  replenishment = " + d.replenishment() + "\n";
             },
             inventoryButton
         ));

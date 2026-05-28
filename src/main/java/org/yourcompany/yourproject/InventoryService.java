@@ -19,6 +19,8 @@ public class InventoryService {
         }
     }
 
+    public record InventoryDetails(String stockNumber, int quantity, String location, int minStock, int maxStock, int replenishment) {}
+
     private final ReplenishmentService replenishmentService;
 
     public InventoryService() {
@@ -37,6 +39,27 @@ public class InventoryService {
             }
         }
         return -1; // Indicate item not found
+    }
+
+    public InventoryDetails getInventoryDetails(String stockNumber) throws SQLException {
+        String sql = "SELECT quantity, location, min_stock, max_stock, replenishment FROM item WHERE stock_number = ?";
+        try (Connection conn = DB.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, stockNumber);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return new InventoryDetails(
+                        stockNumber,
+                        rs.getInt("quantity"),
+                        rs.getString("location"),
+                        rs.getInt("min_stock"),
+                        rs.getInt("max_stock"),
+                        rs.getInt("replenishment")
+                    );
+                }
+            }
+        }
+        return null;
     }
 
     public void fillOrder(int orderId) throws SQLException {

@@ -19,6 +19,10 @@ public class CartCheckoutTab extends JPanel {
     private final OrderService orderService = new OrderService();
 
     public CartCheckoutTab() {
+        this("");
+    }
+
+    public CartCheckoutTab(String customerId) {
         setLayout(new BorderLayout(8, 8));
 
         JTextArea outputArea = new JTextArea(20, 80);
@@ -26,7 +30,9 @@ public class CartCheckoutTab extends JPanel {
 
         JPanel controls = new JPanel(new FlowLayout(FlowLayout.LEFT));
 
-        JTextField customerField = new JTextField("Lkim", 8);
+        JTextField customerField = new JTextField(customerId == null ? "" : customerId, 8);
+        customerField.setEditable(false);
+        customerField.setToolTipText("Logged-in customer (locked to current session)");
         JTextField stockField = new JTextField(10);
         JTextField quantityField = new JTextField("1", 4);
 

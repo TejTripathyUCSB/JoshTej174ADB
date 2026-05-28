@@ -24,14 +24,12 @@ public class ReplenishmentService {
         String insertOrderSql = "INSERT INTO edepot_replenishment_orders (order_id, manufacturer_name, order_date) VALUES (?, ?, SYSDATE)";
         String getItemsSql = "SELECT stock_number, quantity, replenishment, max_stock FROM item WHERE manufacturer_name = ? AND quantity < max_stock";
         String insertItemSql = "INSERT INTO edepot_replenishment_items (order_id, stock_number, quantity) VALUES (?, ?, ?)";
-        String updateReplenishmentSql = "UPDATE item SET replenishment = replenishment + ? WHERE stock_number = ?";
 
         try (PreparedStatement psFindMfr = conn.prepareStatement(findMfrSql);
              PreparedStatement psGetSeq = conn.prepareStatement(getSeqSql);
              PreparedStatement psInsertOrder = conn.prepareStatement(insertOrderSql);
              PreparedStatement psGetItems = conn.prepareStatement(getItemsSql);
-             PreparedStatement psInsertItem = conn.prepareStatement(insertItemSql);
-             PreparedStatement psUpdateReplenish = conn.prepareStatement(updateReplenishmentSql)) {
+             PreparedStatement psInsertItem = conn.prepareStatement(insertItemSql)) {
 
             List<String> manufacturers = new ArrayList<>();
             try (ResultSet rs = psFindMfr.executeQuery()) {
@@ -81,10 +79,6 @@ public class ReplenishmentService {
                     psInsertItem.setString(2, line.stockNumber);
                     psInsertItem.setInt(3, line.amountToOrder);
                     psInsertItem.executeUpdate();
-
-                    psUpdateReplenish.setInt(1, line.amountToOrder);
-                    psUpdateReplenish.setString(2, line.stockNumber);
-                    psUpdateReplenish.executeUpdate();
                 }
             }
         }
