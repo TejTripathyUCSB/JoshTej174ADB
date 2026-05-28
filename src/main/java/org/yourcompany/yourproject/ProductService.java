@@ -64,11 +64,15 @@ public class ProductService {
      * So we want products p where p.stock_number can replace the target item.
      * I.e., find rows in emart_compatibility where compatible_stock_number is
      * the target item's stock number.
+     * // JOIN emart_compatibility c ON p.stock_number = c.stock_number
+        // JOIN item target           ON c.compatible_stock_number = target.stock_number
      */
     public void searchCompatibleItems(String manufacturer, String modelNumber) {
         String sql = PRODUCT_SELECT + """
-            JOIN emart_compatibility c ON p.stock_number = c.stock_number
-            JOIN item target           ON c.compatible_stock_number = target.stock_number
+
+            JOIN emart_compatibility c ON p.stock_number = c.compatible_stock_number
+            JOIN item target           ON c.stock_number = target.stock_number
+
             WHERE LOWER(target.manufacturer_name) = LOWER(?)
               AND LOWER(target.model_number)     = LOWER(?)
         """;
