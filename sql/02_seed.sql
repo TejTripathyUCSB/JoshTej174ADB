@@ -1,9 +1,3 @@
--- ===================================================================
--- Seed data generated from SampleData.xlsx (products + customers).
--- Run AFTER 01_schema.sql. Hit COMMIT after.
--- ===================================================================
-
--- Lookup tables
 INSERT INTO manufacturer VALUES ('Canon');
 INSERT INTO manufacturer VALUES ('Dell');
 INSERT INTO manufacturer VALUES ('Envision');
@@ -25,7 +19,7 @@ INSERT INTO category VALUES ('Monitor');
 INSERT INTO category VALUES ('Printer');
 INSERT INTO category VALUES ('Software');
 
--- Items (eDepot inventory records)
+
 INSERT INTO item (stock_number, manufacturer_name, model_number, quantity, min_stock, max_stock, location, replenishment) VALUES ('AA00101', 'HP', 'A6111', 2, 1, 2, 'A9', 0);
 INSERT INTO item (stock_number, manufacturer_name, model_number, quantity, min_stock, max_stock, location, replenishment) VALUES ('AA00201', 'Dell', 'B420', 3, 2, 5, 'A7', 0);
 INSERT INTO item (stock_number, manufacturer_name, model_number, quantity, min_stock, max_stock, location, replenishment) VALUES ('AA00202', 'eMachines', 'C3958', 4, 2, 5, 'B52', 0);
@@ -38,7 +32,7 @@ INSERT INTO item (stock_number, manufacturer_name, model_number, quantity, min_s
 INSERT INTO item (stock_number, manufacturer_name, model_number, quantity, min_stock, max_stock, location, replenishment) VALUES ('AA00601', 'HP', 'K435', 3, 2, 5, 'F9', 0);
 INSERT INTO item (stock_number, manufacturer_name, model_number, quantity, min_stock, max_stock, location, replenishment) VALUES ('AA00602', 'Canon', 'L738', 3, 2, 5, 'F3', 0);
 
--- Products (eMart catalog entries)
+
 INSERT INTO emart_products (stock_number, category, warranty, price) VALUES ('AA00101', 'Laptop', 12, 1630.00);
 INSERT INTO emart_products (stock_number, category, warranty, price) VALUES ('AA00201', 'Desktop', 12, 239.00);
 INSERT INTO emart_products (stock_number, category, warranty, price) VALUES ('AA00202', 'Desktop', 12, 369.99);
@@ -51,7 +45,7 @@ INSERT INTO emart_products (stock_number, category, warranty, price) VALUES ('AA
 INSERT INTO emart_products (stock_number, category, warranty, price) VALUES ('AA00601', 'Camera', 3, 119.99);
 INSERT INTO emart_products (stock_number, category, warranty, price) VALUES ('AA00602', 'Camera', 1, 329.99);
 
--- Product attributes
+
 INSERT INTO emart_product_attributes (stock_number, attribute_name, attribute_value) VALUES ('AA00101', 'Processor speed', '3.33Ghz');
 INSERT INTO emart_product_attributes (stock_number, attribute_name, attribute_value) VALUES ('AA00101', 'Ram size', '512 Mb');
 INSERT INTO emart_product_attributes (stock_number, attribute_name, attribute_value) VALUES ('AA00101', 'Hard disk size', '100Gb');
@@ -83,7 +77,7 @@ INSERT INTO emart_product_attributes (stock_number, attribute_name, attribute_va
 INSERT INTO emart_product_attributes (stock_number, attribute_name, attribute_value) VALUES ('AA00602', 'Max zoom', '5 times');
 INSERT INTO emart_product_attributes (stock_number, attribute_name, attribute_value) VALUES ('AA00602', 'Weight', '24.7 lb');
 
--- Product compatibility (directional)
+
 INSERT INTO emart_compatibility (stock_number, compatible_stock_number) VALUES ('AA00301', 'AA00201');
 INSERT INTO emart_compatibility (stock_number, compatible_stock_number) VALUES ('AA00301', 'AA00202');
 INSERT INTO emart_compatibility (stock_number, compatible_stock_number) VALUES ('AA00302', 'AA00201');
@@ -104,7 +98,7 @@ INSERT INTO emart_compatibility (stock_number, compatible_stock_number) VALUES (
 INSERT INTO emart_compatibility (stock_number, compatible_stock_number) VALUES ('AA00602', 'AA00201');
 INSERT INTO emart_compatibility (stock_number, compatible_stock_number) VALUES ('AA00602', 'AA00202');
 
--- Customers
+
 INSERT INTO emart_customers (customer_id, password, first_name, middle_name, last_name, email, address, status) VALUES ('Lkim', 'Lkim', 'Linda', NULL, 'Kim', 'lkim@cs', '45 Oak Ave, Santa Barbara, CA 93101', 'GOLD');
 INSERT INTO emart_customers (customer_id, password, first_name, middle_name, last_name, email, address, status) VALUES ('Djones', 'Djones', 'Derek', NULL, 'Jones', 'djones@cs', '88 Pine St, Goleta, CA 93117', 'SILVER');
 INSERT INTO emart_customers (customer_id, password, first_name, middle_name, last_name, email, address, status) VALUES ('Mramirez', 'Mramirez', 'Maria', NULL, 'Ramirez', 'mramirez@cs', '12 Maple Rd, Carpinteria, CA 93013', 'NEW');

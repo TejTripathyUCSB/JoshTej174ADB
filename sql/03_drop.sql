@@ -1,10 +1,3 @@
--- ===================================================================
--- Drop script: removes all project tables and sequences.
--- Run BEFORE 01_schema.sql when resetting the database.
--- Safe to run on a fresh DB (missing-table errors are swallowed).
--- ===================================================================
-
--- Drop in reverse FK order: line items before headers, products before items, etc.
 BEGIN EXECUTE IMMEDIATE 'DROP TABLE edepot_replenishment_items   CASCADE CONSTRAINTS PURGE'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;
 /
 BEGIN EXECUTE IMMEDIATE 'DROP TABLE edepot_replenishment_orders  CASCADE CONSTRAINTS PURGE'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;

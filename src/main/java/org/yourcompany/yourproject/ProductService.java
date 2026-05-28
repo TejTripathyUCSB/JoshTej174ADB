@@ -8,8 +8,6 @@ import java.util.List;
 
 public class ProductService {
 
-    // Standard SELECT used by all product-listing queries.
-    // JOINs item because manufacturer + model live there now.
     private static final String PRODUCT_SELECT = """
         SELECT p.stock_number, p.category, i.manufacturer_name AS manufacturer,
                i.model_number, p.price
@@ -58,13 +56,6 @@ public class ProductService {
         runProductQueryWithTwoParams(sql, attributeName, attributeValue);
     }
 
-    /**
-     * Find products compatible with the item identified by (manufacturer, model).
-     * Per spec: "this product can replace any product in the list".
-     * So we want products p where p.stock_number can replace the target item.
-     * I.e., find rows in emart_compatibility where compatible_stock_number is
-     * the target item's stock number.
-     */
     public void searchCompatibleItems(String manufacturer, String modelNumber) {
         String sql = PRODUCT_SELECT + """
             JOIN emart_compatibility c ON p.stock_number = c.stock_number
@@ -75,11 +66,6 @@ public class ProductService {
         runProductQueryWithTwoParams(sql, manufacturer, modelNumber);
     }
 
-    /**
-     * Combined search: any subset of (stock #, manufacturer, model, category,
-     * attribute name, attribute value) may be supplied. Blank/null fields are
-     * ignored. At least one criterion must be non-blank.
-     */
     public void searchCombined(String stockNumber, String manufacturer, String modelNumber,
                                 String category, String attributeName, String attributeValue) {
         boolean needAttrJoin = !isBlank(attributeName) || !isBlank(attributeValue);
@@ -122,8 +108,6 @@ public class ProductService {
     private static boolean isBlank(String s) {
         return s == null || s.trim().isEmpty();
     }
-
-    // ---------- shared helpers ----------
 
     private void runProductQuery(String sql) {
         try (Connection conn = DB.getConnection();

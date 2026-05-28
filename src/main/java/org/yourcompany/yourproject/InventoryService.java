@@ -36,7 +36,7 @@ public class InventoryService {
                 }
             }
         }
-        return -1; // Indicate item not found
+        return -1;
     }
 
     public void fillOrder(int orderId) throws SQLException {
