@@ -105,15 +105,15 @@ INSERT INTO emart_compatibility (stock_number, compatible_stock_number) VALUES (
 INSERT INTO emart_compatibility (stock_number, compatible_stock_number) VALUES ('AA00602', 'AA00202');
 
 -- Customers
-INSERT INTO emart_customers (customer_id, password, first_name, middle_name, last_name, email, address, status) VALUES ('Lkim', 'Lkim', 'Linda', NULL, 'Kim', 'lkim@cs', '45 Oak Ave, Santa Barbara, CA 93101', 'GOLD');
-INSERT INTO emart_customers (customer_id, password, first_name, middle_name, last_name, email, address, status) VALUES ('Djones', 'Djones', 'Derek', NULL, 'Jones', 'djones@cs', '88 Pine St, Goleta, CA 93117', 'SILVER');
-INSERT INTO emart_customers (customer_id, password, first_name, middle_name, last_name, email, address, status) VALUES ('Mramirez', 'Mramirez', 'Maria', NULL, 'Ramirez', 'mramirez@cs', '12 Maple Rd, Carpinteria, CA 93013', 'NEW');
-INSERT INTO emart_customers (customer_id, password, first_name, middle_name, last_name, email, address, status) VALUES ('Tpatel', 'Tpatel', 'Tariq', NULL, 'Patel', 'tpatel@ce', '305 Elm Blvd, Ventura, CA 93001', 'NEW');
-INSERT INTO emart_customers (customer_id, password, first_name, middle_name, last_name, email, address, status) VALUES ('Swong', 'Swong', 'Sarah', NULL, 'Wong', 'swong@ce', '77 Cedar Lane, Ojai, CA 93023', 'GREEN');
-INSERT INTO emart_customers (customer_id, password, first_name, middle_name, last_name, email, address, status) VALUES ('Bford', 'Bford', 'Blake', NULL, 'Ford', 'bford@ce', '200 Spruce Ct, Oxnard, CA 93030', 'GREEN');
-INSERT INTO emart_customers (customer_id, password, first_name, middle_name, last_name, email, address, status) VALUES ('Tcodd', 'Tcodd', 'Ted', NULL, 'Codd', 'tcodd@db', '123 Database St, Data, CA 93116', 'GOLD');
-INSERT INTO emart_customers (customer_id, password, first_name, middle_name, last_name, email, address, status) VALUES ('Pchen', 'Pchen', 'Peter', NULL, 'Chen', 'pchen@db', '456 Database Wy, Datum, CA 93117', 'SILVER');
-INSERT INTO emart_customers (customer_id, password, first_name, middle_name, last_name, email, address, status) VALUES ('Jgray', 'Jgray', 'Jim', NULL, 'Gray', 'jgray@db', '789 Database Rd, Datas, CA 93118', 'GREEN');
-INSERT INTO emart_customers (customer_id, password, first_name, middle_name, last_name, email, address, status) VALUES ('Dknuth', 'Dknuth', 'Donald', NULL, 'Knuth', 'dknuth@cs', '101 Compsci Ln, Comp, CA 94305', 'GOLD');
+INSERT INTO emart_customers (customer_id, password, first_name, middle_name, last_name, email, address, status, is_manager) VALUES ('Lkim', 'Lkim', 'Linda', NULL, 'Kim', 'lkim@cs', '45 Oak Ave, Santa Barbara, CA 93101', 'GOLD', 'T');
+INSERT INTO emart_customers (customer_id, password, first_name, middle_name, last_name, email, address, status, is_manager) VALUES ('Djones', 'Djones', 'Derek', NULL, 'Jones', 'djones@cs', '88 Pine St, Goleta, CA 93117', 'SILVER', 'F');
+INSERT INTO emart_customers (customer_id, password, first_name, middle_name, last_name, email, address, status, is_manager) VALUES ('Mramirez', 'Mramirez', 'Maria', NULL, 'Ramirez', 'mramirez@cs', '12 Maple Rd, Carpinteria, CA 93013', 'NEW', 'F');
+INSERT INTO emart_customers (customer_id, password, first_name, middle_name, last_name, email, address, status, is_manager) VALUES ('Tpatel', 'Tpatel', 'Tariq', NULL, 'Patel', 'tpatel@ce', '305 Elm Blvd, Ventura, CA 93001', 'NEW', 'F');
+INSERT INTO emart_customers (customer_id, password, first_name, middle_name, last_name, email, address, status, is_manager) VALUES ('Swong', 'Swong', 'Sarah', NULL, 'Wong', 'swong@ce', '77 Cedar Lane, Ojai, CA 93023', 'GREEN', 'F');
+INSERT INTO emart_customers (customer_id, password, first_name, middle_name, last_name, email, address, status, is_manager) VALUES ('Bford', 'Bford', 'Blake', NULL, 'Ford', 'bford@ce', '200 Spruce Ct, Oxnard, CA 93030', 'GREEN', 'F');
+INSERT INTO emart_customers (customer_id, password, first_name, middle_name, last_name, email, address, status, is_manager) VALUES ('Tcodd', 'Tcodd', 'Ted', NULL, 'Codd', 'tcodd@db', '123 Database St, Data, CA 93116', 'GOLD', 'T');
+INSERT INTO emart_customers (customer_id, password, first_name, middle_name, last_name, email, address, status, is_manager) VALUES ('Pchen', 'Pchen', 'Peter', NULL, 'Chen', 'pchen@db', '456 Database Wy, Datum, CA 93117', 'SILVER', 'F');
+INSERT INTO emart_customers (customer_id, password, first_name, middle_name, last_name, email, address, status, is_manager) VALUES ('Jgray', 'Jgray', 'Jim', NULL, 'Gray', 'jgray@db', '789 Database Rd, Datas, CA 93118', 'GREEN', 'F');
+INSERT INTO emart_customers (customer_id, password, first_name, middle_name, last_name, email, address, status, is_manager) VALUES ('Dknuth', 'Dknuth', 'Donald', NULL, 'Knuth', 'dknuth@cs', '101 Compsci Ln, Comp, CA 94305', 'GOLD', 'F');
 
 COMMIT;

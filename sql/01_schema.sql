@@ -122,9 +122,11 @@ CREATE TABLE emart_customers (
     email        VARCHAR(50)  NOT NULL,
     address      VARCHAR(100) NOT NULL,
     status       VARCHAR(10)  DEFAULT 'NEW' NOT NULL,
+    is_manager   CHAR(1)      DEFAULT 'F'   NOT NULL,
     PRIMARY KEY (customer_id),
     UNIQUE (email),
-    CONSTRAINT chk_customer_status CHECK (status IN ('NEW', 'GREEN', 'SILVER', 'GOLD'))
+    CONSTRAINT chk_customer_status     CHECK (status     IN ('NEW', 'GREEN', 'SILVER', 'GOLD')),
+    CONSTRAINT chk_customer_is_manager CHECK (is_manager IN ('T', 'F'))
 );
 
 CREATE TABLE emart_cart_items (

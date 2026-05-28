@@ -4,9 +4,14 @@ import javax.swing.SwingUtilities;
 
 public class GuiMain {
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            AppFrame frame = new AppFrame();
+        SwingUtilities.invokeLater(GuiMain::showLogin);
+    }
+
+    private static void showLogin() {
+        LoginPage login = new LoginPage(session -> {
+            AppFrame frame = new AppFrame(session, GuiMain::showLogin);
             frame.setVisible(true);
         });
+        login.setVisible(true);
     }
 }
