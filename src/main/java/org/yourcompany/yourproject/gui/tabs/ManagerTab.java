@@ -69,6 +69,14 @@ public class ManagerTab extends JPanel {
         maintenanceRow.add(deleteOldButton);
         controls.add(maintenanceRow);
 
+        JPanel replenishRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JTextField roIdField = new JTextField(10);
+        JButton receiveReplenButton = new JButton("Receive Replenishment");
+        replenishRow.add(new JLabel("Replen. Order ID"));
+        replenishRow.add(roIdField);
+        replenishRow.add(receiveReplenButton);
+        controls.add(replenishRow);
+
         JPanel orderRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JTextField mfrField = new JTextField(8);
         JTextField orderStockField = new JTextField(8);
@@ -130,6 +138,24 @@ public class ManagerTab extends JPanel {
             outputArea,
             () -> ConsoleCapture.capture(managerService::deleteOldSalesTransactions),
             deleteOldButton
+        ));
+
+        receiveReplenButton.addActionListener(e -> GuiTaskRunner.run(
+            "Receive Replenishment",
+            outputArea,
+            () -> ConsoleCapture.capture(() -> {
+                String roId = roIdField.getText().trim();
+                if (roId.isEmpty()) {
+                    System.out.println("Replenishment order ID is required (e.g. RO00001).");
+                    return;
+                }
+                try {
+                    managerService.receiveReplenishmentOrder(roId);
+                } catch (Exception ex) {
+                    System.out.println("Failed: " + ex.getMessage());
+                }
+            }),
+            receiveReplenButton
         ));
 
         addLineButton.addActionListener(e -> GuiTaskRunner.run(

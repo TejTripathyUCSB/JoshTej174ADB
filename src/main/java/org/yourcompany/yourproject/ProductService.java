@@ -12,7 +12,7 @@ public class ProductService {
     // JOINs item because manufacturer + model live there now.
     private static final String PRODUCT_SELECT = """
         SELECT p.stock_number, p.category, i.manufacturer_name AS manufacturer,
-               i.model_number, p.price
+               i.model_number, p.price, p.warranty
         FROM emart_products p
         JOIN item i ON p.stock_number = i.stock_number
     """;
@@ -175,7 +175,8 @@ public class ProductService {
                 rs.getString("category") + " | " +
                 rs.getString("manufacturer") + " | " +
                 rs.getString("model_number") + " | $" +
-                rs.getDouble("price")
+                rs.getDouble("price") + " | warranty " +
+                rs.getInt("warranty") + " mo"
             );
         }
         if (!found) {
