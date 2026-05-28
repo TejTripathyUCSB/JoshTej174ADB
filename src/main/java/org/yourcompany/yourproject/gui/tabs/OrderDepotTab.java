@@ -1,9 +1,7 @@
 package org.yourcompany.yourproject.gui.tabs;
 
-import org.yourcompany.yourproject.InventoryService;
-import org.yourcompany.yourproject.OrderService;
-import org.yourcompany.yourproject.gui.util.ConsoleCapture;
-import org.yourcompany.yourproject.gui.util.GuiTaskRunner;
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -11,11 +9,12 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
-import java.awt.BorderLayout;
-import java.awt.FlowLayout;
+
+import org.yourcompany.yourproject.InventoryService;
+import org.yourcompany.yourproject.gui.util.ConsoleCapture;
+import org.yourcompany.yourproject.gui.util.GuiTaskRunner;
 
 public class OrderDepotTab extends JPanel {
-    private final OrderService orderService = new OrderService();
     private final InventoryService inventoryService = new InventoryService();
 
     public OrderDepotTab() {
@@ -28,15 +27,11 @@ public class OrderDepotTab extends JPanel {
         JTextField orderIdField = new JTextField(8);
         JTextField stockField = new JTextField(10);
 
-        JButton displayOrderButton = new JButton("Display Order");
-        JButton rerunOrderButton = new JButton("Rerun Order -> Cart");
         JButton fillOrderButton = new JButton("Fill Order");
         JButton inventoryButton = new JButton("Check Inventory");
 
         controls.add(new JLabel("Order ID"));
         controls.add(orderIdField);
-        controls.add(displayOrderButton);
-        controls.add(rerunOrderButton);
         controls.add(fillOrderButton);
         controls.add(new JLabel("Stock #"));
         controls.add(stockField);
@@ -45,19 +40,6 @@ public class OrderDepotTab extends JPanel {
         add(controls, BorderLayout.NORTH);
         add(new JScrollPane(outputArea), BorderLayout.CENTER);
 
-        displayOrderButton.addActionListener(e -> GuiTaskRunner.run(
-            "Display Order",
-            outputArea,
-            () -> ConsoleCapture.capture(() -> orderService.displayOrder(parseOrderId(orderIdField))),
-            displayOrderButton
-        ));
-
-        rerunOrderButton.addActionListener(e -> GuiTaskRunner.run(
-            "Rerun Order",
-            outputArea,
-            () -> ConsoleCapture.capture(() -> orderService.rerunOrder(parseOrderId(orderIdField))),
-            rerunOrderButton
-        ));
 
         fillOrderButton.addActionListener(e -> GuiTaskRunner.run(
             "Fill Order",

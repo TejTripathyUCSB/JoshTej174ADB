@@ -1,9 +1,7 @@
 package org.yourcompany.yourproject.gui.tabs;
 
-import org.yourcompany.yourproject.CartService;
-import org.yourcompany.yourproject.OrderService;
-import org.yourcompany.yourproject.gui.util.ConsoleCapture;
-import org.yourcompany.yourproject.gui.util.GuiTaskRunner;
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -11,8 +9,11 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
-import java.awt.BorderLayout;
-import java.awt.FlowLayout;
+
+import org.yourcompany.yourproject.CartService;
+import org.yourcompany.yourproject.OrderService;
+import org.yourcompany.yourproject.gui.util.ConsoleCapture;
+import org.yourcompany.yourproject.gui.util.GuiTaskRunner;
 
 public class CartCheckoutTab extends JPanel {
     private final CartService cartService = new CartService();
@@ -35,11 +36,14 @@ public class CartCheckoutTab extends JPanel {
         customerField.setToolTipText("Logged-in customer (locked to current session)");
         JTextField stockField = new JTextField(10);
         JTextField quantityField = new JTextField("1", 4);
+        JTextField orderIdField = new JTextField(8);
 
         JButton addButton = new JButton("Add");
         JButton removeButton = new JButton("Remove");
         JButton displayButton = new JButton("Display Cart");
         JButton checkoutButton = new JButton("Checkout");
+        JButton displayOrderButton = new JButton("Display Order");
+        JButton rerunOrderButton = new JButton("Rerun Order");
 
         controls.add(new JLabel("Customer"));
         controls.add(customerField);
@@ -51,6 +55,10 @@ public class CartCheckoutTab extends JPanel {
         controls.add(removeButton);
         controls.add(displayButton);
         controls.add(checkoutButton);
+        controls.add(new JLabel("Order ID"));
+        controls.add(orderIdField);
+        controls.add(displayOrderButton);
+        controls.add(rerunOrderButton);
 
         add(controls, BorderLayout.NORTH);
         add(new JScrollPane(outputArea), BorderLayout.CENTER);
@@ -96,6 +104,24 @@ public class CartCheckoutTab extends JPanel {
                 }
             }),
             checkoutButton
+        ));
+
+        displayOrderButton.addActionListener(e -> GuiTaskRunner.run(
+            "Display Order",
+            outputArea,
+            () -> ConsoleCapture.capture(() -> orderService.displayOrder(
+                Integer.parseInt(orderIdField.getText().trim())
+            )),
+            displayOrderButton
+        ));
+
+        rerunOrderButton.addActionListener(e -> GuiTaskRunner.run(
+            "Rerun Order -> Cart",
+            outputArea,
+            () -> ConsoleCapture.capture(() -> orderService.rerunOrder(
+                Integer.parseInt(orderIdField.getText().trim())
+            )),
+            rerunOrderButton
         ));
     }
 }
