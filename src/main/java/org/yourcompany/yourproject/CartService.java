@@ -60,8 +60,6 @@ public class CartService {
     }
 
     public void displayCart(String customerId) {
-        // JOINs through item to get manufacturer + model_number (which now
-        // live only on item, not on emart_products).
         String sql = """
             SELECT c.stock_number, i.manufacturer_name, i.model_number,
                    c.quantity, p.price, c.quantity * p.price AS line_total
@@ -110,7 +108,6 @@ public class CartService {
         }
     }
 
-    /** Useful for testing -- clears all items in a customer's cart. */
     public void clearCart(String customerId) {
         String sql = "DELETE FROM emart_cart_items WHERE customer_id = ?";
 
