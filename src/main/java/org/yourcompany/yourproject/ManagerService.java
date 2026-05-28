@@ -266,18 +266,12 @@ public class ManagerService {
             }
 
             String insertItemSql = "INSERT INTO edepot_replenishment_items (order_id, stock_number, quantity) VALUES (?, ?, ?)";
-            String bumpReplenSql = "UPDATE item SET replenishment = replenishment + ? WHERE stock_number = ?";
-            try (PreparedStatement psItem = conn.prepareStatement(insertItemSql);
-                 PreparedStatement psBump = conn.prepareStatement(bumpReplenSql)) {
+            try (PreparedStatement psItem = conn.prepareStatement(insertItemSql)) {
                 for (ManufacturerOrderLine line : lines) {
                     psItem.setString(1, orderId);
                     psItem.setString(2, line.stockNumber());
                     psItem.setInt(3, line.quantity());
                     psItem.executeUpdate();
-
-                    psBump.setInt(1, line.quantity());
-                    psBump.setString(2, line.stockNumber());
-                    psBump.executeUpdate();
                 }
             }
 
